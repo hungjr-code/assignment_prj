@@ -54,89 +54,84 @@ public class UserDAO {
         }
         return user;
     }
-
-    public User getUserByEmail(String email) throws SQLException {
+    private String getNewUserID() throws SQLException, ClassNotFoundException {
+        String newUserID = "US000001"; 
+        
+        String sql = "SELECT MAX(CAST(SUBSTRING(user_id, 3, 6) AS INT)) AS max_id_num FROM dbo.users";
+        
+        try (Connection cn = DBUtil.getConnection();
+             PreparedStatement st = cn.prepareStatement(sql);
+             ResultSet rs = st.executeQuery()) {
+            
+            if (rs.next()) {
+                int maxIdNum = rs.getInt("max_id_num");
+                if (!rs.wasNull()) {
+                    int nextIdNum = maxIdNum + 1;
+                    newUserID = "US" + String.format("%06d", nextIdNum);
+                }
+            }
+        }
+        System.out.println("Generated New User ID: " + newUserID);
+        return newUserID;
+    }
+    
+    public User getUserByEmail(String email) throws SQLException, ClassNotFoundException {
         User user = null;
-        String sql = "select [user_id], [email], [password_hash], [role], [created_at]\n"
-                + "from [dbo].[users]\n"
-                + "where [email] = ?";
-        PreparedStatement st = cn.prepareStatement(sql);
-        st.setString(1, email);
-        ResultSet table = st.executeQuery();
-        if (table != null && table.next()) {
-            String userID = table.getString("user_id");
-            String passwordHash = table.getString("password_hash");
-            String role = table.getString("role");
-            LocalDateTime createdAt = table.getTimestamp("created_at").toLocalDateTime();
-            boolean active = true;
-            user = new User(userID, email, passwordHash, role, createdAt, active);
+        String sql = "SELECT user_id, email, password_hash, role, created_at FROM dbo.users WHERE email = ?";
+        try (Connection cn = DBUtil.getConnection();
+             PreparedStatement st = cn.prepareStatement(sql)) {
+            st.setString(1, email);
+            try (ResultSet rs = st.executeQuery()) {
+                if (rs.next()) {
+                    String userID = rs.getString("user_id");
+                    String passwordHash = rs.getString("password_hash");
+                    String role = rs.getString("role");
+                    LocalDateTime createdAt = rs.getTimestamp("created_at").toLocalDateTime();
+                    user = new User(userID, email, passwordHash, role, createdAt, true);
+                }
+            }
         }
         return user;
     }
 
-    public boolean registerUser(User user) throws SQLException {
-        Connection cn = null;
-        PreparedStatement st = null;
-        try {
-            cn = DBUtil.getConnection();
-            
-            String sql = "INSERT INTO [dbo].[users] ([email], [password_hash], [role], [created_at])\n"
-                    + "VALUES (?, ?, ?, ?)";
-            st = cn.prepareStatement(sql);
-            st.setString(1, user.getEmail());
-            st.setString(2, user.getPasswordHash());
-            st.setString(3, user.getRole());
-            st.setTimestamp(4, java.sql.Timestamp.valueOf(user.getCreatedAt()));
+    public boolean registerUser(User user) throws SQLException, ClassNotFoundException {
+        String sql = "INSERT INTO dbo.users (user_id, email, password_hash, role, created_at) VALUES (?, ?, ?, ?, ?)";
+        try (Connection cn = DBUtil.getConnection();
+             PreparedStatement st = cn.prepareStatement(sql)) {
 
-            int result = st.executeUpdate();
-            System.out.println("Insert result: " + result);
-            return result > 0;
-        } catch (Exception e) {
-            System.err.println("Error in registerUser: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } finally {
-            if (st != null) {
-                st.close();
-            }
-            if (cn != null) {
-                cn.close();
-            }
+            String newUserID = getNewUserID();
+            user.setUserID(newUserID); 
+            st.setString(1, newUserID);
+            st.setString(2, user.getEmail());
+            st.setString(3, user.getPasswordHash());
+            st.setString(4, user.getRole());
+            st.setTimestamp(5, java.sql.Timestamp.valueOf(user.getCreatedAt()));
+            
+            return st.executeUpdate() > 0;
         }
     }
 
-    public boolean registerStudent(Student student) throws SQLException {
-        Connection cn = null;
-        PreparedStatement st = null;
-        try {
-            cn = DBUtil.getConnection();
-            String sql = "INSERT INTO [dbo].[students] ([user_id], [full_name], [date_of_birth], [phone], [address])\n"
-                    + "VALUES (?, ?, ?, ?, ?)";
-            st = cn.prepareStatement(sql);
-            st.setString(1, student.getUserID());
+    public boolean registerStudent(Student student) throws SQLException, ClassNotFoundException {
+        String sql = "INSERT INTO dbo.students (user_id, full_name, date_of_birth, phone, address) VALUES (?, ?, ?, ?, ?)";
+        try (Connection cn = DBUtil.getConnection();
+             PreparedStatement st = cn.prepareStatement(sql)) {
+            
+            st.setString(1, student.getUserID()); // Bây giờ user_id đã là String
             st.setString(2, student.getFullName());
-            if (student.getDateOfBirth() != null) {
-                st.setDate(3, student.getDateOfBirth());
-            } else {
-                st.setNull(3, java.sql.Types.DATE);
-            }
+            st.setDate(3, student.getDateOfBirth());
             st.setString(4, student.getPhone());
             st.setString(5, student.getAddress());
-
-            int result = st.executeUpdate();
-            return result > 0;
-        } catch (Exception e) {
-            System.err.println("Error in registerStudent: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        } finally {
-            if (st != null) {
-                st.close();
-            }
-            if (cn != null) {
-                cn.close();
-            }
+            return st.executeUpdate() > 0;
         }
+    }
+    
+    public boolean deleteUser(String userId) throws SQLException, ClassNotFoundException {
+        String sql = "DELETE FROM dbo.users WHERE user_id = ?";
+         try (Connection cn = DBUtil.getConnection();
+             PreparedStatement st = cn.prepareStatement(sql)) {
+             st.setString(1, userId);
+             return st.executeUpdate() > 0;
+         }
     }
 
     private Admin getAdmin(User user) throws SQLException {

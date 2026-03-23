@@ -46,128 +46,49 @@ public class RegisterController extends HttpServlet {
             String dateOfBirthStr = request.getParameter("txtdateofbirth");
             String address = request.getParameter("txtaddress");
 
-            System.out.println("=== Register Request ===");
-            System.out.println("Email: " + email);
-            System.out.println("Password: " + password);
-            System.out.println("FullName: " + fullName);
-
-            // Validation
-            if (email == null || email.trim().isEmpty()) {
-                request.setAttribute("ERROR", "Email cannot be empty!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            if (password == null || password.trim().isEmpty()) {
-                request.setAttribute("ERROR", "Password cannot be empty!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            if (password.length() < 6) {
-                request.setAttribute("ERROR", "Password must be at least 6 characters!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            if (fullName == null || fullName.trim().isEmpty()) {
-                request.setAttribute("ERROR", "Full name cannot be empty!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-                request.setAttribute("ERROR", "Invalid email format!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            System.out.println("Validation passed!");
-
-            UserDAO userDAO = new UserDAO();
-
-            // Check if email already exists
-            User existingUser = userDAO.getUserByEmail(email);
-            if (existingUser != null) {
-                System.out.println("Email already exists!");
-                request.setAttribute("ERROR", "Email already registered!");
-                request.getRequestDispatcher(url).forward(request, response);
-                return;
-            }
-
-            System.out.println("Email is unique!");
-
-            // Register new user
-            User newUser = new User(
-                    null,
-                    email,
-                    password,
-                    "student",
-                    LocalDateTime.now(),
-                    true
-            );
-
-            System.out.println("Attempting to register user...");
-            boolean registerSuccess = userDAO.registerUser(newUser);
-            System.out.println("Register result: " + registerSuccess);
-
-            if (registerSuccess) {
-                System.out.println("User registered successfully!");
-                
-                // Get the registered user to retrieve their user_id
-                User registeredUser = userDAO.getUserByEmail(email);
-                
-                if (registeredUser != null) {
-                    System.out.println("Retrieved user with ID: " + registeredUser.getUserID());
-                    
-                    // Register student details
-                    Date dateOfBirth = null;
-                    if (dateOfBirthStr != null && !dateOfBirthStr.isEmpty()) {
-                        dateOfBirth = Date.valueOf(dateOfBirthStr);
-                    }
-
-                    Student student = new Student(
-                            registeredUser,
-                            fullName,
-                            dateOfBirth,
-                            phone != null ? phone : "",
-                            address != null ? address : ""
-                    );
-
-                    System.out.println("Attempting to register student...");
-                    boolean studentSuccess = userDAO.registerStudent(student);
-                    System.out.println("Student register result: " + studentSuccess);
-
-                    if (studentSuccess) {
-                        System.out.println("Student registered successfully!");
-                        request.setAttribute("SUCCESS", "Registration successful! Please login.");
-                        url = "login.jsp";
-                    } else {
-                        System.out.println("Failed to register student!");
-                        request.setAttribute("ERROR", "Failed to register student details!");
-                    }
-                } else {
-                    System.out.println("Could not retrieve registered user!");
-                    request.setAttribute("ERROR", "Could not retrieve user ID!");
-                }
+            // --- Validation ---
+            if (email == null || email.trim().isEmpty() || password == null || password.trim().isEmpty() || fullName == null || fullName.trim().isEmpty()) {
+                request.setAttribute("ERROR", "Email, Password, and Full Name must not be empty.");
+            } else if (password.length() < 6) {
+                request.setAttribute("ERROR", "Password must be at least 6 characters long.");
+            } else if (!email.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+                request.setAttribute("ERROR", "Invalid email format.");
             } else {
-                System.out.println("User registration failed!");
-                request.setAttribute("ERROR", "Registration failed! Please try again.");
-            }
+                // --- Logic ---
+                UserDAO dao = new UserDAO();
+                if (dao.getUserByEmail(email) != null) {
+                    request.setAttribute("ERROR", "This email is already registered.");
+                } else {
+                    // 1. Tạo user
+                    User newUser = new User(null, email, password, "student", LocalDateTime.now(), true);
+                    boolean userCreated = dao.registerUser(newUser);
 
-        } catch (Exception e) {
-            System.err.println("=== EXCEPTION in RegisterController ===");
-            System.err.println("Error type: " + e.getClass().getName());
-            System.err.println("Error message: " + e.getMessage());
-            e.printStackTrace();
-            request.setAttribute("ERROR", "An error occurred: " + e.getMessage());
-        } finally {
-            try {
-                request.getRequestDispatcher(url).forward(request, response);
-            } catch (ServletException | IOException ex) {
-                System.err.println("Error forwarding request: " + ex.getMessage());
-                ex.printStackTrace();
+                    if (userCreated) {
+                        // 2. Lấy lại user vừa tạo để có user_id
+                        User createdUser = dao.getUserByEmail(email);
+                        // 3. Tạo student
+                        Date dateOfBirth = (dateOfBirthStr != null && !dateOfBirthStr.isEmpty()) ? Date.valueOf(dateOfBirthStr) : null;
+                        Student student = new Student(createdUser, fullName, dateOfBirth, phone, address);
+                        boolean studentCreated = dao.registerStudent(student);
+
+                        if (studentCreated) {
+                            request.setAttribute("SUCCESS", "Registration successful! Please log in.");
+                            url = "login.jsp"; // Chuyển đến trang login khi thành công
+                        } else {
+                            // Xử lý lỗi: Xóa user đã tạo nếu không tạo được student
+                            dao.deleteUser(createdUser.getUserID());
+                            request.setAttribute("ERROR", "Failed to register student details.");
+                        }
+                    } else {
+                        request.setAttribute("ERROR", "User registration failed. Please try again.");
+                    }
+                }
             }
+        } catch (Exception e) {
+            log("Error at RegisterController: " + e.toString());
+            request.setAttribute("ERROR", "An error occurred during registration.");
+        } finally {
+            request.getRequestDispatcher(url).forward(request, response);
         }
     }
 

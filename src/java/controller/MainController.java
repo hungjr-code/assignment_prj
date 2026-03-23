@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 public class MainController extends HttpServlet {
 
     private static final String INDEX = "index.jsp";
+    private static final String ERROR = "error.jsp";
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -55,7 +56,9 @@ public class MainController extends HttpServlet {
                         url="RegisterController";
                         break;
                     default:
-                        break;
+                    request.setAttribute("ERROR", "Action not supported.");
+                    url = ERROR;
+                    break;
                 }
             }
         } catch (Exception e) {
