@@ -4,22 +4,26 @@
  */
 package controller;
 
+import dao.CourseDAO;
+import dto.Course;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 /**
  *
- * @author kAwa
+ * @author Admin
  */
-public class MainController extends HttpServlet {
-
-    private static final String INDEX = "index.jsp";
+@WebServlet(name = "ViewCourseController", urlPatterns = {"/ViewCourseController"})
+public class ViewCourseController extends HttpServlet {
+    
     private static final String ERROR = "error.jsp";
-
+    private static final String SUCCESS = "index.jsp";
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
@@ -32,39 +36,15 @@ public class MainController extends HttpServlet {
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
-        String url = INDEX;
+        String url = ERROR;
         try {
-            String action = request.getParameter("action");
-            if (action == null || action.equalsIgnoreCase("home")) {
-                url = "ViewCourseController";
-            } else {
-                switch (action) {
-                    case "gologin":
-                        url = "login.jsp";
-                        break;
-                    case "godash":
-                        url = "ViewController";
-                        break;
-                    case "Login":
-                        url = "LoginController";
-                        break;
-                    case "logout":
-                        url = "LogoutController";
-                        break;
-                    case "goregister":
-                        url="register.jsp";
-                        break;
-                    case "register":
-                        url="RegisterController";
-                        break;
-                    default:
-                    request.setAttribute("ERROR", "Action not supported.");
-                    url = ERROR;
-                    break;
-                }
-            }
+            CourseDAO dao = new CourseDAO();
+            List<Course> courseList = dao.getCourseList();
+            request.setAttribute("COURSE_LIST", courseList);
+            url = SUCCESS;
         } catch (Exception e) {
-            e.printStackTrace();
+            log("Error at ViewCourseController: " + e.toString());
+            request.setAttribute("ERROR_MESSAGE", "Could not fetch courses. Please check the server log.");
         } finally {
             request.getRequestDispatcher(url).forward(request, response);
         }

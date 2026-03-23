@@ -26,7 +26,23 @@
             </form>
         </header>
         <main>
-
+            <h1>Our Courses</h1>
+            <div class="course-container">
+                <c:if test="${not empty requestScope.COURSE_LIST}">
+                    <c:forEach var="course" items="${requestScope.COURSE_LIST}">
+                        <div class="course-card">
+                            <h3>${course.courseName}</h3>
+                            <p>${course.description}</p>
+                            <p><strong>Language:</strong> ${course.language}</p>
+                            <p><strong>Level:</strong> ${course.level}</p>
+                            <p><strong>Fee:</strong> ${course.fee} VND</p>
+                        </div>
+                    </c:forEach>
+                </c:if>
+                <c:if test="${empty requestScope.COURSE_LIST}">
+                    <p>No courses are available at this moment. Please check back later!</p>
+                </c:if>
+            </div>
         </main>
         <footer>
             <b>@fpt.edu.vn</b>

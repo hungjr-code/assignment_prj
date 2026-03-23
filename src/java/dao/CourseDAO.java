@@ -11,6 +11,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -20,22 +21,41 @@ public class CourseDAO {
 
     Connection cn;
 
-    public ArrayList<Course> getCourseList() throws SQLException {
-        ArrayList<Course> list = new ArrayList<>();
-        String sql = "select *\n"
-                + "from [dbo].[courses]";
-        PreparedStatement st = cn.prepareStatement(sql);
-        ResultSet table = st.executeQuery();
-        while (table != null && table.next()) {
-            String courseID = table.getString("course_id");
-            String courseName = table.getString("course_name");
-            String language = table.getString("language");
-            String level = table.getString("level");
-            String description = table.getString("description");
-            int fee = table.getInt("fee");
-            int duration = table.getInt("duration_weeks");
-            Course course = new Course(courseID, courseName, language, level, description, fee, duration);
-            list.add(course);
+    public List<Course> getCourseList() throws SQLException, ClassNotFoundException {
+        List<Course> list = new ArrayList<>();
+        Connection cn = null;
+        PreparedStatement st = null;
+        ResultSet rs = null;
+        try {
+            cn = DBUtil.getConnection();
+            if (cn != null) {
+                String sql = "SELECT course_id, course_name, language, level, description, fee, duration_weeks FROM [dbo].[courses]";
+                st = cn.prepareStatement(sql);
+                rs = st.executeQuery();
+                while (rs != null && rs.next()) {
+                    String courseID = rs.getString("course_id");
+                    String courseName = rs.getString("course_name");
+                    String language = rs.getString("language");
+                    String level = rs.getString("level");
+                    String description = rs.getString("description");
+                    int fee = rs.getInt("fee");
+                    int duration = rs.getInt("duration_weeks");
+                    Course course = new Course(courseID, courseName, language, level, description, fee, duration);
+                    list.add(course);
+                }
+                System.out.println("CourseDAO.getCourseList: Found " + list.size() + " courses.");
+            }
+        } finally {
+            // Luôn đóng tất cả tài nguyên sau khi sử dụng
+            if (rs != null) {
+                rs.close();
+            }
+            if (st != null) {
+                st.close();
+            }
+            if (cn != null) {
+                cn.close();
+            }
         }
         return list;
     }

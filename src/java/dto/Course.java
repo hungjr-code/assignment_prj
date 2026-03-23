@@ -16,6 +16,7 @@ public class Course {
     private String description;
     private int fee;
     private int duration;
+    private boolean enroll;
 
     public Course() {
     }
@@ -28,6 +29,7 @@ public class Course {
         this.description = description;
         this.fee = fee;
         this.duration = duration;
+        this.enroll = false;
     }
 
     public String getCourseID() {
@@ -85,5 +87,13 @@ public class Course {
     public void setDuration(int duration) {
         this.duration = duration;
     }
-    
+
+    public boolean isEnroll() {
+        return enroll;
+    }
+
+    public void setEnroll(boolean enroll) {
+        this.enroll = enroll;
+    }
+
 }
