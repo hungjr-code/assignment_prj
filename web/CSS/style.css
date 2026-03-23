@@ -1,0 +1,115 @@
+/*
+Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+Click nbfs://nbhost/SystemFileSystem/Templates/JSP_Servlet/CascadeStyleSheet.css to edit this template
+*/
+/* 
+    Created on : Mar 22, 2026, 5:48:09 PM
+    Author     : kAwa
+*/
+* {
+    border: 1px black solid;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+main {
+    flex-grow: 1;
+    align-content: center;
+}
+
+header {
+    height: 50px;
+    background-color: lightblue;
+    display: flex;
+    column-count: 2;
+    align-items: center;
+}
+
+footer {
+    height: 50px;
+    background-color: lightblue;
+    align-content: center;
+    justify-items: center;
+}
+
+header nav {
+    display: flex;
+    justify-content: space-evenly;
+    flex: 3;
+}
+
+header form {
+    display: flex;
+    flex: 2;
+    text-align: center;
+}
+
+header b {
+    width: 30%;
+    text-align: center;
+}
+
+b {
+    display: block;
+}
+
+#login-form {
+    border: 5px lightblue solid;
+    border-style: outset;
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    align-items: center;
+    padding: 10px 0;
+    margin: auto;
+}
+
+#login-form input[type="submit"] {
+}
+
+.form-element {
+    margin: 3px 0;
+    width: 70%;
+}
+
+.form-row {
+    display: flex;
+    column-count: 2;
+    width: 70%;
+}
+
+.form-row label {
+    flex: 1;
+}
+
+.form-row input {
+    flex: 3;
+}
+
+#login-form > label {
+    width: 70%;
+    text-align: left;
+    font-size: 24px;
+    font-weight: bold;
+    padding-bottom: 10px;
+}
+
+#login-form > strong {
+    width: 70%;
+    text-align: left;
+    padding-top: 5px;
+}
+
+#search-bar {
+    display: inline;
+}
+
+#search-bar input[type="text"] {
+    width: 205px;
+}
